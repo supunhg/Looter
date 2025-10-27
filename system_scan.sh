@@ -1,6 +1,14 @@
 #!/bin/bash
 
 # ============================================================================
+# Looter - Advanced Linux Security Audit & Privilege Escalation Scanner
+# Copyright (c) 2025 Supun Hewagamage. All Rights Reserved.
+# 
+# PROPRIETARY SOFTWARE - Unauthorized use is strictly prohibited
+# For licensing inquiries: https://github.com/supunhg
+# ============================================================================
+
+# ============================================================================
 # CONFIGURATION SECTION - Enable/Disable Scan Modules
 # ============================================================================
 SCAN_BASIC_SYSTEM=true              # System info, hardware, kernel
@@ -24,6 +32,23 @@ SCAN_CRON_SCHEDULED=true            # Cron jobs and scheduled tasks
 SCAN_VULNERABILITY_SCORING=true     # Automated vulnerability assessment
 SCAN_PERFORMANCE=true               # Performance metrics and statistics
 
+# Advanced Detection Features
+SCAN_CLOUD_DETECTION=true           # AWS, Azure, GCP instance detection
+SCAN_INTERESTING_FILES=true         # Config files, credentials, backups
+SCAN_ENVIRONMENT_ANALYSIS=true      # PATH, LD_PRELOAD, environment exploitation
+SCAN_PROCESS_ANALYSIS=true          # Detailed process enumeration with exploits
+SCAN_SOCKET_ANALYSIS=true           # Unix sockets, named pipes
+SCAN_COMPILER_DETECTION=true        # Available compilers and dev tools
+SCAN_WRITABLE_PATHS=true            # Writable folders in PATH and common locations
+SCAN_INTERESTING_PERMS=true         # /etc files with interesting permissions
+SCAN_PASSWD_SHADOW_ANALYSIS=true    # Deep password file analysis
+SCAN_CAPABILITIES_EXTENDED=true     # Extended capability analysis
+SCAN_DOCKER_ESCAPE=true             # Docker escape techniques
+SCAN_TIMERS_DETAILED=true           # Systemd timers exploitation
+SCAN_SEARCH_PASSWORDS=true          # Search for passwords in files
+SCAN_BASH_HISTORY=true              # Analyze bash history for secrets
+SCAN_LDPRELOAD_HIJACK=true          # LD_PRELOAD and LD_LIBRARY_PATH hijacking
+
 # Network Discovery Settings
 NETWORK_SCAN_TIMEOUT=1              # Ping timeout in seconds
 NETWORK_SCAN_THREADS=50             # Max concurrent ping threads
@@ -35,6 +60,20 @@ CHECK_NO_OWNER=true                 # Find files with no owner
 CHECK_WEAK_PERMISSIONS=true         # Check for weak file permissions
 CHECK_SUDO_MISCONFIG=true           # Check sudo misconfigurations
 CHECK_KERNEL_EXPLOITS=true          # Check for known kernel vulnerabilities
+
+# Advanced Privilege Escalation Checks
+CHECK_POLKIT=true                   # PolicyKit vulnerabilities
+CHECK_DBUS=true                     # D-Bus misconfigurations
+CHECK_NFS_EXPORTS=true              # NFS share misconfigurations
+CHECK_WRITEABLE_SERVICES=true       # Writable systemd service files
+CHECK_SCREEN_TMUX=true              # Screen/tmux socket hijacking
+CHECK_CVE_EXPLOITS=true             # Known CVE exploit checks
+CHECK_INTERESTING_GROUPS=true       # Membership in interesting groups
+
+# File Search Settings
+SEARCH_MAX_DEPTH=4                  # Max depth for file searches
+SEARCH_PASSWORDS_IN_FILES=true      # Search for passwords in common files
+SEARCH_INTERESTING_EXTENSIONS=true  # .bak, .conf, .key, .pem, etc.
 
 # Output Settings
 OUTPUT_VERBOSE=true                 # Detailed output
@@ -118,6 +157,44 @@ is_root() {
     [ "$EUID" -eq 0 ]
 }
 
+# Function to print interesting finding (color-coded highlighting)
+print_interesting() {
+    local level=$1
+    local message=$2
+    
+    case $level in
+        99)  # Critical finding - bright red
+            echo -e "${RED}╔══════════════════════════════════════════════════════════╗${NC}" | tee -a "$OUTPUT_FILE"
+            echo -e "${RED}║ 99% PE vector: $message${NC}" | tee -a "$OUTPUT_FILE"
+            echo -e "${RED}╚══════════════════════════════════════════════════════════╝${NC}" | tee -a "$OUTPUT_FILE"
+            ;;
+        95)  # High priority
+            echo -e "${RED}[!] 95% PE vector: $message${NC}" | tee -a "$OUTPUT_FILE"
+            ;;
+        75)  # Medium-high priority
+            echo -e "${YELLOW}[*] 75% PE vector: $message${NC}" | tee -a "$OUTPUT_FILE"
+            ;;
+        *)   # General interesting
+            echo -e "${CYAN}[+] Interesting: $message${NC}" | tee -a "$OUTPUT_FILE"
+            ;;
+    esac
+}
+
+# Function to check if command exists
+command_exists() {
+    command -v "$1" &> /dev/null
+}
+
+# Function to search for patterns in files
+search_pattern() {
+    local pattern=$1
+    local path=$2
+    local max_depth=${3:-4}
+    
+    find "$path" -maxdepth $max_depth -type f -readable 2>/dev/null | \
+    xargs grep -l -i "$pattern" 2>/dev/null | head -20
+}
+
 # Start the scan
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║     COMPREHENSIVE SECURITY AUDIT & SYSTEM SCANNER         ║${NC}"
@@ -141,6 +218,118 @@ if [ "$SCAN_BASIC_SYSTEM" = true ]; then
     run_cmd "uptime"
     run_cmd "who -b"
     run_cmd "timedatectl 2>/dev/null || date"
+fi
+
+# Cloud Instance Detection (Advanced)
+if [ "$SCAN_CLOUD_DETECTION" = true ]; then
+    print_section "CLOUD INSTANCE DETECTION"
+    
+    # AWS Detection
+    echo -e "\n${CYAN}Checking for AWS instance...${NC}" | tee -a "$OUTPUT_FILE"
+    if timeout 2 curl -s -f http://169.254.169.254/latest/meta-data/ &>/dev/null; then
+        print_interesting 95 "AWS EC2 Instance Detected!"
+        run_cmd "curl -s -f http://169.254.169.254/latest/meta-data/instance-id 2>/dev/null"
+        run_cmd "curl -s -f http://169.254.169.254/latest/meta-data/instance-type 2>/dev/null"
+        run_cmd "curl -s -f http://169.254.169.254/latest/meta-data/placement/availability-zone 2>/dev/null"
+        run_cmd "curl -s -f http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null"
+        run_cmd "curl -s -f http://169.254.169.254/latest/meta-data/iam/security-credentials/ 2>/dev/null"
+        
+        # Check for accessible IAM credentials
+        IAM_ROLE=$(curl -s -f http://169.254.169.254/latest/meta-data/iam/security-credentials/ 2>/dev/null)
+        if [ ! -z "$IAM_ROLE" ]; then
+            add_vuln "CRITICAL" "AWS IAM credentials accessible via metadata service" "$IAM_ROLE"
+            print_interesting 99 "AWS IAM Role credentials accessible!"
+            run_cmd "curl -s -f http://169.254.169.254/latest/meta-data/iam/security-credentials/$IAM_ROLE 2>/dev/null"
+        fi
+    else
+        echo "Not an AWS instance" | tee -a "$OUTPUT_FILE"
+    fi
+    
+    # Azure Detection
+    echo -e "\n${CYAN}Checking for Azure instance...${NC}" | tee -a "$OUTPUT_FILE"
+    if timeout 2 curl -s -f -H "Metadata:true" "http://169.254.169.254/metadata/instance?api-version=2021-02-01" &>/dev/null; then
+        print_interesting 95 "Azure Instance Detected!"
+        run_cmd "curl -s -H 'Metadata:true' 'http://169.254.169.254/metadata/instance?api-version=2021-02-01' 2>/dev/null"
+        run_cmd "curl -s -H 'Metadata:true' 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com/' 2>/dev/null"
+    else
+        echo "Not an Azure instance" | tee -a "$OUTPUT_FILE"
+    fi
+    
+    # GCP Detection
+    echo -e "\n${CYAN}Checking for GCP instance...${NC}" | tee -a "$OUTPUT_FILE"
+    if timeout 2 curl -s -f -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/" &>/dev/null; then
+        print_interesting 95 "Google Cloud Platform Instance Detected!"
+        run_cmd "curl -s -H 'Metadata-Flavor: Google' 'http://metadata.google.internal/computeMetadata/v1/instance/name' 2>/dev/null"
+        run_cmd "curl -s -H 'Metadata-Flavor: Google' 'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token' 2>/dev/null"
+    else
+        echo "Not a GCP instance" | tee -a "$OUTPUT_FILE"
+    fi
+fi
+
+# Compiler and Development Tools Detection (Advanced)
+if [ "$SCAN_COMPILER_DETECTION" = true ]; then
+    print_section "COMPILER & DEVELOPMENT TOOLS"
+    
+    echo -e "\n${CYAN}Checking for compilers and development tools...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    COMPILERS_FOUND=""
+    
+    if command_exists gcc; then
+        print_interesting 75 "GCC compiler available - can compile exploits"
+        run_cmd "gcc --version | head -1"
+        COMPILERS_FOUND="$COMPILERS_FOUND gcc"
+    fi
+    
+    if command_exists g++; then
+        print_interesting 75 "G++ compiler available"
+        run_cmd "g++ --version | head -1"
+        COMPILERS_FOUND="$COMPILERS_FOUND g++"
+    fi
+    
+    if command_exists cc; then
+        echo "cc available" | tee -a "$OUTPUT_FILE"
+        COMPILERS_FOUND="$COMPILERS_FOUND cc"
+    fi
+    
+    if command_exists python || command_exists python3; then
+        print_interesting 75 "Python available - can run Python exploits"
+        run_cmd "python --version 2>&1 || python3 --version 2>&1"
+    fi
+    
+    if command_exists perl; then
+        print_interesting 75 "Perl available - can run Perl exploits"
+        run_cmd "perl --version | head -2"
+    fi
+    
+    if command_exists ruby; then
+        echo "Ruby available" | tee -a "$OUTPUT_FILE"
+        run_cmd "ruby --version"
+    fi
+    
+    if command_exists make; then
+        echo "make available" | tee -a "$OUTPUT_FILE"
+    fi
+    
+    if command_exists wget; then
+        print_interesting 50 "wget available - can download files"
+    fi
+    
+    if command_exists curl; then
+        print_interesting 50 "curl available - can download files"
+    fi
+    
+    if command_exists nc || command_exists netcat; then
+        print_interesting 75 "netcat available - can be used for reverse shells"
+    fi
+    
+    if command_exists socat; then
+        print_interesting 75 "socat available - advanced networking tool"
+    fi
+    
+    if [ ! -z "$COMPILERS_FOUND" ]; then
+        echo -e "${YELLOW}Compilers found: $COMPILERS_FOUND${NC}" | tee -a "$OUTPUT_FILE"
+        add_vuln "MEDIUM" "Compilers available on system" "Can be used to compile privilege escalation exploits"
+    fi
 fi
 
 # Hardware Information
@@ -697,6 +886,351 @@ if [ "$SCAN_CONTAINERS" = true ]; then
     fi
 fi
 
+# Docker Escape Techniques (Advanced Detection)
+if [ "$SCAN_DOCKER_ESCAPE" = true ] && [ -f "/.dockerenv" ]; then
+    print_section "DOCKER ESCAPE TECHNIQUES"
+    
+    print_interesting 99 "Running inside a Docker container!"
+    
+    echo -e "\n${CYAN}Checking for Docker escape vectors...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    # Check if running as privileged
+    if grep -q "CapEff.*0000003fffffffff" /proc/self/status 2>/dev/null; then
+        print_interesting 99 "Container is running in PRIVILEGED mode!"
+        add_vuln "CRITICAL" "Privileged Docker container detected" "Can escape to host"
+    fi
+    
+    # Check for mounted Docker socket
+    if [ -S "/var/run/docker.sock" ]; then
+        print_interesting 99 "Docker socket mounted inside container!"
+        add_vuln "CRITICAL" "Docker socket accessible from container" "Can control host Docker daemon"
+    fi
+    
+    # Check for host filesystem mounts
+    HOST_MOUNTS=$(mount | grep -E "^/dev/(sd|xvd|nvme)" | grep -v "/etc/hosts\|/etc/hostname\|/etc/resolv.conf")
+    if [ ! -z "$HOST_MOUNTS" ]; then
+        print_interesting 99 "Host filesystem may be mounted!"
+        echo "$HOST_MOUNTS" | tee -a "$OUTPUT_FILE"
+        add_vuln "CRITICAL" "Host filesystem mounted in container" "$HOST_MOUNTS"
+    fi
+    
+    # Check capabilities
+    run_cmd "capsh --print 2>/dev/null || echo 'capsh not available'"
+    
+    # Check for interesting capabilities
+    if grep -q "cap_sys_admin" /proc/self/status 2>/dev/null; then
+        print_interesting 95 "CAP_SYS_ADMIN capability detected - possible escape vector!"
+        add_vuln "HIGH" "CAP_SYS_ADMIN in container" "Can be used for container escape"
+    fi
+fi
+
+# Interesting Files Search (Advanced)
+if [ "$SCAN_INTERESTING_FILES" = true ]; then
+    print_section "INTERESTING FILES & CREDENTIALS"
+    
+    echo -e "\n${CYAN}Searching for interesting configuration files...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    # Search for configuration files
+    if [ "$SEARCH_INTERESTING_EXTENSIONS" = true ]; then
+        echo -e "\n${YELLOW}Configuration and backup files:${NC}" | tee -a "$OUTPUT_FILE"
+        find /home /root /etc /var/www -type f \( -name "*.conf" -o -name "*.config" -o -name "*.cfg" -o -name "*.bak" -o -name "*.backup" -o -name "*~" \) 2>/dev/null | head -50 | tee -a "$OUTPUT_FILE"
+    fi
+    
+    # Search for keys and certificates
+    echo -e "\n${YELLOW}SSH keys and certificates:${NC}" | tee -a "$OUTPUT_FILE"
+    find / -type f \( -name "*.pem" -o -name "*.key" -o -name "id_rsa*" -o -name "id_dsa*" -o -name "id_ecdsa*" -o -name "id_ed25519*" -o -name "*.p12" -o -name "*.pfx" \) 2>/dev/null | head -50 | tee -a "$OUTPUT_FILE"
+    
+    # Check if any SSH keys are readable
+    for keyfile in $(find /home -name "id_rsa" -o -name "id_dsa" 2>/dev/null | head -10); do
+        if [ -r "$keyfile" ]; then
+            print_interesting 95 "Readable SSH private key: $keyfile"
+            add_vuln "HIGH" "Readable SSH private key found" "$keyfile"
+        fi
+    done
+    
+    # Search for database files
+    echo -e "\n${YELLOW}Database files:${NC}" | tee -a "$OUTPUT_FILE"
+    find /var /home -type f \( -name "*.db" -o -name "*.sqlite" -o -name "*.sqlite3" \) 2>/dev/null | head -30 | tee -a "$OUTPUT_FILE"
+    
+    # Search for password files
+    if [ "$SEARCH_PASSWORDS_IN_FILES" = true ]; then
+        echo -e "\n${YELLOW}Files containing 'password':${NC}" | tee -a "$OUTPUT_FILE"
+        search_pattern "password" "/home" $SEARCH_MAX_DEPTH | tee -a "$OUTPUT_FILE"
+        search_pattern "password" "/var/www" 2 | tee -a "$OUTPUT_FILE"
+    fi
+    
+    # Search for AWS credentials
+    echo -e "\n${YELLOW}AWS credential files:${NC}" | tee -a "$OUTPUT_FILE"
+    find /home /root -type f -name "credentials" -o -name "config" 2>/dev/null | grep "\.aws" | tee -a "$OUTPUT_FILE"
+    
+    if [ -f "$HOME/.aws/credentials" ]; then
+        print_interesting 95 "AWS credentials file found!"
+        add_vuln "HIGH" "AWS credentials file present" "$HOME/.aws/credentials"
+    fi
+    
+    # Search for environment files
+    echo -e "\n${YELLOW}.env files:${NC}" | tee -a "$OUTPUT_FILE"
+    find /home /var/www /opt -type f -name ".env*" 2>/dev/null | head -20 | tee -a "$OUTPUT_FILE"
+fi
+
+# Password Search in Common Files
+if [ "$SCAN_SEARCH_PASSWORDS" = true ]; then
+    print_section "PASSWORD SEARCH IN FILES"
+    
+    echo -e "\n${CYAN}Searching for hardcoded passwords in scripts and configs...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    # Search in shell scripts
+    echo -e "\n${YELLOW}Shell scripts with password references:${NC}" | tee -a "$OUTPUT_FILE"
+    find /home /var -type f -name "*.sh" 2>/dev/null | xargs grep -l -i -E "password=|passwd=|pwd=" 2>/dev/null | head -20 | tee -a "$OUTPUT_FILE"
+    
+    # Search in Python files
+    echo -e "\n${YELLOW}Python files with password references:${NC}" | tee -a "$OUTPUT_FILE"
+    find /home /var -type f -name "*.py" 2>/dev/null | xargs grep -l -i -E "password|passwd|pwd" 2>/dev/null | head -20 | tee -a "$OUTPUT_FILE"
+    
+    # Search in config files
+    echo -e "\n${YELLOW}Config files with credentials:${NC}" | tee -a "$OUTPUT_FILE"
+    grep -r -i -E "password|passwd|pwd|user.*=|username|api.?key|secret" /etc/*.conf 2>/dev/null | grep -v "^#" | head -20 | tee -a "$OUTPUT_FILE"
+fi
+
+# Bash History Analysis
+if [ "$SCAN_BASH_HISTORY" = true ]; then
+    print_section "BASH HISTORY ANALYSIS"
+    
+    echo -e "\n${CYAN}Analyzing bash history for sensitive commands...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    for user_home in /home/* /root; do
+        if [ -f "$user_home/.bash_history" ] && [ -r "$user_home/.bash_history" ]; then
+            USER=$(basename "$user_home")
+            echo -e "\n${YELLOW}History for $USER:${NC}" | tee -a "$OUTPUT_FILE"
+            
+            # Check for passwords in history
+            PASS_IN_HIST=$(grep -i -E "password|passwd|mysql.*-p|psql.*password" "$user_home/.bash_history" 2>/dev/null | head -5)
+            if [ ! -z "$PASS_IN_HIST" ]; then
+                print_interesting 95 "Passwords found in $USER's bash history!"
+                echo "$PASS_IN_HIST" | tee -a "$OUTPUT_FILE"
+                add_vuln "HIGH" "Passwords in bash history" "$user_home/.bash_history"
+            fi
+            
+            # Check for SSH commands
+            grep -E "ssh.*@|scp.*@" "$user_home/.bash_history" 2>/dev/null | tail -5 | tee -a "$OUTPUT_FILE"
+            
+            # Check for wget/curl downloads
+            grep -E "wget|curl.*http" "$user_home/.bash_history" 2>/dev/null | tail -5 | tee -a "$OUTPUT_FILE"
+        fi
+    done
+fi
+
+# LD_PRELOAD and Library Hijacking
+if [ "$SCAN_LDPRELOAD_HIJACK" = true ]; then
+    print_section "LD_PRELOAD & LIBRARY HIJACKING"
+    
+    echo -e "\n${CYAN}Checking for LD_PRELOAD and library hijacking vectors...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    # Check for LD_PRELOAD in environment
+    if [ ! -z "$LD_PRELOAD" ]; then
+        print_interesting 95 "LD_PRELOAD is set!"
+        echo "LD_PRELOAD=$LD_PRELOAD" | tee -a "$OUTPUT_FILE"
+        add_vuln "HIGH" "LD_PRELOAD environment variable set" "$LD_PRELOAD"
+    fi
+    
+    # Check for LD_LIBRARY_PATH
+    if [ ! -z "$LD_LIBRARY_PATH" ]; then
+        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" | tee -a "$OUTPUT_FILE"
+    fi
+    
+    # Check /etc/ld.so.preload
+    if [ -f "/etc/ld.so.preload" ]; then
+        print_interesting 75 "/etc/ld.so.preload exists"
+        run_cmd "cat /etc/ld.so.preload"
+        
+        if [ -w "/etc/ld.so.preload" ]; then
+            print_interesting 99 "/etc/ld.so.preload is WRITABLE!"
+            add_vuln "CRITICAL" "/etc/ld.so.preload is writable" "Can inject malicious library"
+        fi
+    fi
+    
+    # Check for writable library paths
+    echo -e "\n${CYAN}Checking library search paths...${NC}" | tee -a "$OUTPUT_FILE"
+    run_cmd "cat /etc/ld.so.conf"
+    run_cmd "cat /etc/ld.so.conf.d/* 2>/dev/null"
+    
+    # Check if any library paths are writable
+    for lib_dir in /lib /lib64 /usr/lib /usr/lib64 /usr/local/lib; do
+        if [ -w "$lib_dir" 2>/dev/null ]; then
+            print_interesting 99 "Library directory $lib_dir is WRITABLE!"
+            add_vuln "CRITICAL" "Writable library directory" "$lib_dir"
+        fi
+    done
+fi
+
+# Advanced Group Membership Analysis
+if [ "$CHECK_INTERESTING_GROUPS" = true ]; then
+    print_section "INTERESTING GROUP MEMBERSHIPS"
+    
+    echo -e "\n${CYAN}Checking for membership in interesting groups...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    CURRENT_GROUPS=$(groups)
+    
+    # Docker group
+    if echo "$CURRENT_GROUPS" | grep -q "docker"; then
+        print_interesting 99 "User is in 'docker' group - can escalate to root!"
+        add_vuln "CRITICAL" "Member of docker group" "Can escalate to root via docker"
+    fi
+    
+    # LXD group
+    if echo "$CURRENT_GROUPS" | grep -q "lxd\|lxc"; then
+        print_interesting 99 "User is in 'lxd' group - can escalate to root!"
+        add_vuln "CRITICAL" "Member of lxd group" "Can escalate to root via lxd"
+    fi
+    
+    # Disk group
+    if echo "$CURRENT_GROUPS" | grep -q "disk"; then
+        print_interesting 99 "User is in 'disk' group - can read/write raw disk!"
+        add_vuln "CRITICAL" "Member of disk group" "Can read/write entire filesystem"
+    fi
+    
+    # Video group
+    if echo "$CURRENT_GROUPS" | grep -q "video"; then
+        print_interesting 75 "User is in 'video' group - may capture screen"
+        add_vuln "MEDIUM" "Member of video group" "Can capture screenshots/video"
+    fi
+    
+    # Sudo group
+    if echo "$CURRENT_GROUPS" | grep -qE "sudo|wheel|admin"; then
+        print_interesting 95 "User is in sudo/wheel/admin group"
+        add_vuln "HIGH" "Member of privileged group" "Has sudo access"
+    fi
+    
+    # Shadow group
+    if echo "$CURRENT_GROUPS" | grep -q "shadow"; then
+        print_interesting 95 "User is in 'shadow' group - can read /etc/shadow!"
+        add_vuln "HIGH" "Member of shadow group" "Can read password hashes"
+    fi
+    
+    echo -e "\nCurrent groups: $CURRENT_GROUPS" | tee -a "$OUTPUT_FILE"
+fi
+
+# PolicyKit (Polkit) Vulnerabilities
+if [ "$CHECK_POLKIT" = true ]; then
+    print_section "POLICYKIT (POLKIT) ANALYSIS"
+    
+    echo -e "\n${CYAN}Checking PolicyKit vulnerabilities...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    # Check pkexec version
+    if command_exists pkexec; then
+        PKEXEC_VERSION=$(pkexec --version 2>&1 | grep -oP '\d+\.\d+')
+        echo "pkexec version: $PKEXEC_VERSION" | tee -a "$OUTPUT_FILE"
+        
+        # Check for CVE-2021-4034 (PwnKit)
+        if command_exists pkexec && [ -u "$(which pkexec)" ]; then
+            print_interesting 95 "pkexec is SUID - check for CVE-2021-4034 (PwnKit)"
+            add_vuln "HIGH" "pkexec SUID binary present" "May be vulnerable to CVE-2021-4034"
+        fi
+    fi
+    
+    # Check polkit rules
+    if [ -d "/etc/polkit-1/rules.d" ]; then
+        run_cmd "ls -la /etc/polkit-1/rules.d/"
+        run_cmd "cat /etc/polkit-1/rules.d/* 2>/dev/null"
+    fi
+fi
+
+# D-Bus Analysis
+if [ "$CHECK_DBUS" = true ]; then
+    print_section "D-BUS ANALYSIS"
+    
+    echo -e "\n${CYAN}Checking D-Bus configuration...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    # List D-Bus services
+    if command_exists dbus-send; then
+        run_cmd "dbus-send --system --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames 2>/dev/null | head -30"
+    fi
+    
+    # Check for writable D-Bus config
+    if [ -w "/etc/dbus-1/system.d" ]; then
+        print_interesting 95 "/etc/dbus-1/system.d is writable!"
+        add_vuln "HIGH" "Writable D-Bus config directory" "/etc/dbus-1/system.d"
+    fi
+fi
+
+# NFS Exports Check
+if [ "$CHECK_NFS_EXPORTS" = true ]; then
+    print_section "NFS EXPORTS ANALYSIS"
+    
+    if [ -f "/etc/exports" ]; then
+        echo -e "\n${CYAN}Checking NFS exports...${NC}" | tee -a "$OUTPUT_FILE"
+        run_cmd "cat /etc/exports"
+        
+        # Check for no_root_squash
+        if grep -q "no_root_squash" /etc/exports 2>/dev/null; then
+            print_interesting 99 "NFS export with no_root_squash found!"
+            add_vuln "CRITICAL" "NFS no_root_squash configuration" "Can be exploited for privilege escalation"
+        fi
+        
+        # Check for world-writable exports
+        if grep -q "*(rw" /etc/exports 2>/dev/null; then
+            print_interesting 95 "World-writable NFS export found!"
+            add_vuln "HIGH" "World-writable NFS export" "/etc/exports"
+        fi
+    fi
+    
+    # Check showmount
+    if command_exists showmount; then
+        run_cmd "showmount -e localhost 2>/dev/null"
+    fi
+fi
+
+# Writable Service Files
+if [ "$CHECK_WRITEABLE_SERVICES" = true ]; then
+    print_section "WRITABLE SYSTEMD SERVICES"
+    
+    echo -e "\n${CYAN}Checking for writable systemd service files...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    for service_dir in /etc/systemd/system /usr/lib/systemd/system /lib/systemd/system; do
+        if [ -d "$service_dir" ]; then
+            WRITABLE_SERVICES=$(find "$service_dir" -type f -writable 2>/dev/null)
+            if [ ! -z "$WRITABLE_SERVICES" ]; then
+                print_interesting 99 "Writable systemd service files found in $service_dir!"
+                echo "$WRITABLE_SERVICES" | tee -a "$OUTPUT_FILE"
+                add_vuln "CRITICAL" "Writable systemd service files" "$WRITABLE_SERVICES"
+            fi
+        fi
+    done
+fi
+
+# Screen/Tmux Socket Hijacking
+if [ "$CHECK_SCREEN_TMUX" = true ]; then
+    print_section "SCREEN/TMUX SESSION HIJACKING"
+    
+    echo -e "\n${CYAN}Checking for hijackable screen/tmux sessions...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    # Check for screen sessions
+    if command_exists screen; then
+        SCREEN_SESSIONS=$(screen -ls 2>/dev/null | grep -E "Detached|Attached")
+        if [ ! -z "$SCREEN_SESSIONS" ]; then
+            print_interesting 75 "Screen sessions found!"
+            echo "$SCREEN_SESSIONS" | tee -a "$OUTPUT_FILE"
+        fi
+        
+        # Check for accessible screen sockets
+        for sock in /var/run/screen/S-*/* 2>/dev/null; do
+            if [ -r "$sock" ] && [ -w "$sock" ]; then
+                print_interesting 95 "Accessible screen socket: $sock"
+                add_vuln "HIGH" "Hijackable screen socket" "$sock"
+            fi
+        done
+    fi
+    
+    # Check for tmux sessions
+    if command_exists tmux; then
+        TMUX_SESSIONS=$(tmux ls 2>/dev/null)
+        if [ ! -z "$TMUX_SESSIONS" ]; then
+            print_interesting 75 "Tmux sessions found!"
+            echo "$TMUX_SESSIONS" | tee -a "$OUTPUT_FILE"
+        fi
+    fi
+fi
+
 # Database Detection
 if [ "$SCAN_DATABASES" = true ]; then
     print_section "DATABASE DETECTION"
@@ -933,9 +1467,158 @@ if [ "$SCAN_CRON_SCHEDULED" = true ]; then
 fi
 
 # Environment Variables
-print_section "ENVIRONMENT VARIABLES"
-run_cmd "printenv | sort"
-run_cmd "env | grep -E '(PATH|HOME|USER|SHELL|TERM|LANG)'"
+if [ "$SCAN_ENVIRONMENT_ANALYSIS" = true ]; then
+    print_section "ENVIRONMENT VARIABLES & PATH ANALYSIS"
+    run_cmd "printenv | sort"
+    
+    echo -e "\n${CYAN}Analyzing environment for security issues...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    # Check for sensitive variables
+    for var in PASSWORD PASS PWD API_KEY SECRET TOKEN AWS_SECRET AWS_ACCESS; do
+        if printenv | grep -q "^$var"; then
+            print_interesting 95 "Sensitive environment variable detected: $var"
+            add_vuln "HIGH" "Sensitive data in environment variable" "$var"
+        fi
+    done
+    
+    # Analyze PATH
+    echo -e "\n${YELLOW}PATH Analysis:${NC}" | tee -a "$OUTPUT_FILE"
+    echo "PATH=$PATH" | tee -a "$OUTPUT_FILE"
+    
+    IFS=':' read -ra PATH_DIRS <<< "$PATH"
+    for dir in "${PATH_DIRS[@]}"; do
+        if [ -d "$dir" ]; then
+            if [ -w "$dir" ]; then
+                print_interesting 99 "PATH directory is WRITABLE: $dir"
+                add_vuln "CRITICAL" "Writable directory in PATH" "$dir - can hijack binaries"
+            fi
+            
+            # Check owner
+            DIR_OWNER=$(stat -c '%U' "$dir" 2>/dev/null)
+            if [ "$DIR_OWNER" == "$(whoami)" ]; then
+                print_interesting 95 "PATH directory owned by current user: $dir"
+                add_vuln "HIGH" "User owns directory in PATH" "$dir"
+            fi
+        else
+            echo "PATH directory does not exist: $dir" | tee -a "$OUTPUT_FILE"
+        fi
+    done
+else
+    print_section "ENVIRONMENT VARIABLES"
+    run_cmd "printenv | sort"
+fi
+
+# Writable Paths and Folders
+if [ "$SCAN_WRITABLE_PATHS" = true ]; then
+    print_section "WRITABLE PATHS & FOLDERS"
+    
+    echo -e "\n${CYAN}Checking writable folders in common locations...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    # Check /tmp, /var/tmp, /dev/shm
+    for tmpdir in /tmp /var/tmp /dev/shm; do
+        if [ -d "$tmpdir" ] && [ -w "$tmpdir" ]; then
+            echo "Writable: $tmpdir" | tee -a "$OUTPUT_FILE"
+        fi
+    done
+    
+    # Check for writable folders in /opt, /usr/local
+    echo -e "\n${YELLOW}Writable directories in /opt:${NC}" | tee -a "$OUTPUT_FILE"
+    find /opt -type d -writable 2>/dev/null | head -20 | tee -a "$OUTPUT_FILE"
+    
+    echo -e "\n${YELLOW}Writable directories in /usr/local:${NC}" | tee -a "$OUTPUT_FILE"
+    find /usr/local -type d -writable 2>/dev/null | head -20 | tee -a "$OUTPUT_FILE"
+    
+    echo -e "\n${YELLOW}Writable directories in /var/www:${NC}" | tee -a "$OUTPUT_FILE"
+    find /var/www -type d -writable 2>/dev/null | head -20 | tee -a "$OUTPUT_FILE"
+fi
+
+# Interesting /etc File Permissions
+if [ "$SCAN_INTERESTING_PERMS" = true ]; then
+    print_section "INTERESTING /etc FILE PERMISSIONS"
+    
+    echo -e "\n${CYAN}Checking /etc for interesting permissions...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    # Readable /etc/shadow
+    if [ -r "/etc/shadow" ]; then
+        print_interesting 99 "/etc/shadow is READABLE!"
+        add_vuln "CRITICAL" "/etc/shadow readable by current user" "Can access password hashes"
+    fi
+    
+    # Writable /etc files
+    echo -e "\n${YELLOW}Writable files in /etc:${NC}" | tee -a "$OUTPUT_FILE"
+    WRITABLE_ETC=$(find /etc -type f -writable 2>/dev/null | head -30)
+    if [ ! -z "$WRITABLE_ETC" ]; then
+        print_interesting 95 "Writable files found in /etc!"
+        echo "$WRITABLE_ETC" | tee -a "$OUTPUT_FILE"
+        
+        # Critical files
+        if echo "$WRITABLE_ETC" | grep -qE "passwd|shadow|sudoers|crontab"; then
+            print_interesting 99 "Critical /etc files are writable!"
+            add_vuln "CRITICAL" "Critical /etc files writable" "$WRITABLE_ETC"
+        fi
+    else
+        echo "No writable files in /etc" | tee -a "$OUTPUT_FILE"
+    fi
+fi
+
+# Detailed Password and Shadow Analysis
+if [ "$SCAN_PASSWD_SHADOW_ANALYSIS" = true ]; then
+    print_section "DETAILED PASSWORD FILE ANALYSIS"
+    
+    echo -e "\n${CYAN}Analyzing /etc/passwd and /etc/shadow...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    # Users with shell access
+    echo -e "\n${YELLOW}Users with shell access:${NC}" | tee -a "$OUTPUT_FILE"
+    grep -v "nologin\|false" /etc/passwd | grep -v "^#" | tee -a "$OUTPUT_FILE"
+    
+    # Users with UID 0
+    echo -e "\n${YELLOW}Users with UID 0:${NC}" | tee -a "$OUTPUT_FILE"
+    awk -F: '($3 == "0") {print $1}' /etc/passwd | tee -a "$OUTPUT_FILE"
+    
+    # Users without password
+    if [ -r "/etc/shadow" ]; then
+        echo -e "\n${YELLOW}Checking for users without passwords...${NC}" | tee -a "$OUTPUT_FILE"
+        NOPASS_USERS=$(awk -F: '($2 == "" || $2 == "!" || $2 == "*") {print $1}' /etc/shadow 2>/dev/null)
+        if [ ! -z "$NOPASS_USERS" ]; then
+            echo "$NOPASS_USERS" | tee -a "$OUTPUT_FILE"
+        fi
+    fi
+    
+    # Check for default passwords
+    echo -e "\n${YELLOW}Checking for potential default credentials...${NC}" | tee -a "$OUTPUT_FILE"
+    for user in admin administrator root test guest; do
+        if grep -q "^$user:" /etc/passwd; then
+            print_interesting 75 "Common username found: $user"
+        fi
+    done
+fi
+
+# Extended Capabilities Analysis
+if [ "$SCAN_CAPABILITIES_EXTENDED" = true ]; then
+    print_section "EXTENDED CAPABILITIES ANALYSIS"
+    
+    echo -e "\n${CYAN}Performing detailed capabilities scan...${NC}" | tee -a "$OUTPUT_FILE"
+    
+    if command_exists getcap; then
+        # Scan entire filesystem for capabilities
+        echo -e "\n${YELLOW}Files with capabilities (this may take a while):${NC}" | tee -a "$OUTPUT_FILE"
+        getcap -r / 2>/dev/null | tee -a "$OUTPUT_FILE"
+        
+        # Dangerous capabilities
+        DANGEROUS_CAPS=$(getcap -r / 2>/dev/null | grep -E "cap_setuid|cap_setgid|cap_dac_override|cap_sys_admin|cap_chown")
+        if [ ! -z "$DANGEROUS_CAPS" ]; then
+            print_interesting 99 "DANGEROUS CAPABILITIES FOUND!"
+            echo "$DANGEROUS_CAPS" | tee -a "$OUTPUT_FILE"
+            add_vuln "CRITICAL" "Dangerous capabilities on binaries" "$DANGEROUS_CAPS"
+        fi
+        
+        # Check current process capabilities
+        echo -e "\n${YELLOW}Current process capabilities:${NC}" | tee -a "$OUTPUT_FILE"
+        cat /proc/self/status | grep Cap | tee -a "$OUTPUT_FILE"
+    else
+        echo "getcap not available" | tee -a "$OUTPUT_FILE"
+    fi
+fi
 
 # Vulnerability Scoring Summary
 if [ "$SCAN_VULNERABILITY_SCORING" = true ]; then
