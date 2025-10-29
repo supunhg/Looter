@@ -1,7 +1,7 @@
 // Hardware Info
 // Installed Software version Info
 // Aavailable Services
-// Open | Filtered Ports
+// Open and Filtered Ports
 // Hostname 
 // IP
 // Users 
