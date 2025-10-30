@@ -1,0 +1,22 @@
+# Scan output files
+*.txt
+*_scan_*.txt
+
+# Temporary files
+*.tmp
+*.log
+*~
+*.swp
+*.swo
+
+# Backup files
+*.bak
+*_old.*
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

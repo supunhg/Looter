@@ -1,12 +1,33 @@
 #!/bin/bash
 
 # ============================================================================
-# Looter - Advanced Linux Security Audit & Privilege Escalation Scanner
-# Copyright (c) 2025 Supun Hewagamage. All Rights Reserved.
+# Looter - Advanced Linux Security Audit & Privilege Escalation Scanner v2.0
+# Copyright (c) 2025. All Rights Reserved.
 # 
 # PROPRIETARY SOFTWARE - Unauthorized use is strictly prohibited
-# For licensing inquiries: https://github.com/supunhg
 # ============================================================================
+
+# Display tool header
+clear
+cat << "EOF"
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                                                                           ║
+║     ██╗      ██████╗  ██████╗ ████████╗███████╗██████╗                  ║
+║     ██║     ██╔═══██╗██╔═══██╗╚══██╔══╝██╔════╝██╔══██╗                 ║
+║     ██║     ██║   ██║██║   ██║   ██║   █████╗  ██████╔╝                 ║
+║     ██║     ██║   ██║██║   ██║   ██║   ██╔══╝  ██╔══██╗                 ║
+║     ███████╗╚██████╔╝╚██████╔╝   ██║   ███████╗██║  ██║                 ║
+║     ╚══════╝ ╚═════╝  ╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝                 ║
+║                                                                           ║
+║              Advanced Security Audit & Privilege Escalation              ║
+║                        [ DEEP SCAN (OFFLINE) ]                            ║
+║                                                                           ║
+║   Comprehensive system analysis for security assessment and pentesting   ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+EOF
+sleep 1
 
 # ============================================================================
 # CONFIGURATION SECTION - Enable/Disable Scan Modules

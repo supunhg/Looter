@@ -151,9 +151,8 @@ This release transforms Looter into an advanced security auditing tool with prop
 ### ⚖️ Legal
 
 - Added proprietary license (All Rights Reserved)
-- Copyright © 2025 Supun Hewagamage
+- Copyright © 2025
 - Explicit permission required for use
-- Added author information and contact details
 
 ---
 
